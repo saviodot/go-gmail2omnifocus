@@ -35,6 +35,7 @@ var (
 	authUrl  = "https://accounts.google.com/o/oauth2/auth"
 	// tokenUrl = "https://accounts.google.com/o/oauth2/token"
 	tokenUrl = "https://oauth2.googleapis.com/token"
+	redirectURL = "http://localhost:1/"
 	scope    = gmail.MailGoogleComScope
 
 	mailTemplate = template.Must(template.New("task").Parse(`From: {{.From}}
@@ -105,6 +106,7 @@ func newGmailer(clientId, secret, cacheFile string) (*gmailer, error) {
 		ClientID:     clientId,
 		ClientSecret: secret,
 		Scopes:        []string{scope},
+		RedirectURL: redirectURL,
  		Endpoint: oauth2.Endpoint{
  			AuthURL: authUrl,
  			TokenURL: tokenUrl,
