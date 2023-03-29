@@ -35,7 +35,8 @@ var (
 	authUrl  = "https://accounts.google.com/o/oauth2/auth"
 	// tokenUrl = "https://accounts.google.com/o/oauth2/token"
 	tokenUrl = "https://oauth2.googleapis.com/token"
-	redirectURL = "http://localhost:1/"
+	// redirectURL = "https://oauth-redirect.googleusercontent.com/r/omnifocus-plugin-382008"
+	redirectURL = "https://oauth-redirect-sandbox.googleusercontent.com/r/omnifocus-plugin-382008"
 	scope    = gmail.MailGoogleComScope
 
 	mailTemplate = template.Must(template.New("task").Parse(`From: {{.From}}
@@ -69,8 +70,9 @@ func main() {
 	}
 
 	task := flag.Arg(0)
+	body := flag.Arg(1)
 	//TODO use body?
-	err = gm.send(cfg.Address, task, "")
+	err = gm.send(cfg.Address, task, body)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -115,8 +117,8 @@ func newGmailer(clientId, secret, cacheFile string) (*gmailer, error) {
 	ctx := context.Background()
 	// Redirect user to consent page to ask for permission
 	// for the scopes specified above.
-	url := config.AuthCodeURL("state", oauth2.AccessTypeOffline)
-	fmt.Printf("Visit the URL for the auth dialog: %v", url)
+	url := config.AuthCodeURL("status", oauth2.AccessTypeOffline)
+	fmt.Printf("Visit the URL for the auth dialog: %v\nPlease enter Code: ", url)
 
 	// Use the authorization code that is pushed to the redirect
 	// URL. Exchange will do the handshake to retrieve the
@@ -126,10 +128,19 @@ func newGmailer(clientId, secret, cacheFile string) (*gmailer, error) {
 	if _, err := fmt.Scan(&code); err != nil {
 		log.Fatal(err)
 	}
+	// fmt.Printf("Code: %v\n", code)
+	// Use the custom HTTP client when requesting a token.
+	// httpClient := &http.Client{Timeout: 2 * time.Second}
+	// ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
+
 	token, err := config.Exchange(ctx, code)
+	fmt.Printf("Token: %v\n", token)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	client := config.Client(ctx, token)
+	client.Get("...")
 	svc, err := gmail.NewService(ctx, option.WithTokenSource(config.TokenSource(ctx, token)))
 	if err != nil {
 		log.Fatal(err)
@@ -155,8 +166,10 @@ func (g *gmailer) send(to, subject, body string) error {
 	mailTemplate.Execute(mail, message{
 		From:    from,
 		To:      to,
-		Subject: encodeRFC2047(subject),
-		Body:    encodeRFC2047(body),
+		Subject: subject,
+		Body:    body,
+		// Subject: encodeRFC2047(subject),
+		// Body:    encodeRFC2047(body),
 	})
 
 	msg := gmail.Message{}
